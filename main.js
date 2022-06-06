@@ -4,20 +4,31 @@ window.onload = function () {
   var host = "broker-cn.emqx.io";
   var port = 8084;
 
+  let accData = {
+    x: "x",
+    y: "y",
+    z: "z",
+    button: false,
+  };
+
+  function buttonState() {
+    accData.button = true;
+  }
+  const element = document.getElementById("count");
+  element.addEventListener("click", buttonState);
+
   function onConnect() {
     console.log("Connected to mqtt server at ", host, ":", port);
     document.getElementById("status").innerHTML =
       "Connected to Broker at <br>broker-cn.emqx.io:8084";
-
-    //mqtt.send(messagex);
 
     navigator.permissions
       .query({ name: "accelerometer" })
       .then(function (result) {
         if (result.state == "granted") {
           console.log("Permission to access accelerometer granted");
-          let sensor = new Accelerometer();
 
+          let sensor = new Accelerometer();
           sensor.start();
 
           sensor.onreading = () => {
@@ -25,18 +36,17 @@ window.onload = function () {
             document.getElementById("acc_data_y").innerHTML = sensor.y;
             document.getElementById("acc_data_z").innerHTML = sensor.z;
 
-            acc_x = new Paho.MQTT.Message(String(sensor.x));
-            acc_y = new Paho.MQTT.Message(String(sensor.y));
-            acc_z = new Paho.MQTT.Message(String(sensor.z));
-            acc_x.destinationName = "sensornode/livestream/x";
-            acc_y.destinationName = "sensornode/livestream/y";
-            acc_z.destinationName = "sensornode/livestream/z";
+            accData.x = String(sensor.x);
+            accData.y = String(sensor.y);
+            accData.z = String(sensor.z);
 
-            mqtt.send(acc_x);
-
-            mqtt.send(acc_y);
-
-            mqtt.send(acc_z);
+            acc_msg = new Paho.MQTT.Message(JSON.stringify(accData));
+            acc_msg.destinationName = "sensornode/livestream";
+            mqtt.send(acc_msg);
+            accData.button = false;
+            /*acc_x = new Paho.MQTT.Message(String(sensor.x));  acc_y = new Paho.MQTT.Message(String(sensor.y));  acc_z = new Paho.MQTT.Message(String(sensor.z));
+            acc_x.destinationName = "sensornode/livestream/x";  acc_y.destinationName = "sensornode/livestream/y";  acc_z.destinationName = "sensornode/livestream/z";
+            mqtt.send(acc_x); mqtt.send(acc_y); mqtt.send(acc_z);*/
           };
 
           sensor.onerror = (event) =>
